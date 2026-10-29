@@ -35,13 +35,25 @@ def post(webhook, item):
     # Avoid Discord @mentions and cap fields to safe sizes.
     def safe(s, n):
         return str(s).replace('@', '@\u200b')[:n]
-    content = (f"🚨 **BUCKS COUNTY 911 — NEW INCIDENT**\n"
-               f"**Number:** {safe(item['id'], 60)}\n"
-               f"**Type:** {safe(item['type'], 180)}\n"
-               f"**Dispatch:** {safe(item['time'], 60)}\n"
-               f"**Location:** {safe(item['location'], 250)}\n"
-    
-    payload = json.dumps({'content': content, 'allowed_mentions': {'parse': []}}).encode()
+    prefix = item['id'][:2].upper()
+    category, color = {
+        'FD': ('FIRE', 0xE53935),       # red
+        'PD': ('POLICE', 0x1976D2),     # blue
+        'ED': ('EMS', 0x8E44AD),        # purple
+    }.get(prefix, ('INCIDENT', 0x808080))
+    payload = json.dumps({
+        'embeds': [{
+            'title': f"🚨 BUCKS COUNTY 911 — {category} INCIDENT",
+            'color': color,
+            'fields': [
+                {'name': 'Number', 'value': safe(item['id'], 60), 'inline': False},
+                {'name': 'Type', 'value': safe(item['type'], 180), 'inline': False},
+                {'name': 'Dispatch', 'value': safe(item['time'], 60), 'inline': False},
+                {'name': 'Location', 'value': safe(item['location'], 250), 'inline': False},
+            ],
+        }],
+        'allowed_mentions': {'parse': []},
+    }).encode()
     req = Request(webhook, data=payload, headers={'Content-Type': 'application/json', 'User-Agent': 'BucksCountyPublicMonitor/1.0'}, method='POST')
     for attempt in range(3):
         try:
