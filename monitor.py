@@ -40,7 +40,7 @@ def post(webhook, item):
                f"**Type:** {safe(item['type'], 180)}\n"
                f"**Dispatch:** {safe(item['time'], 60)}\n"
                f"**Location:** {safe(item['location'], 250)}\n"
-               f"**Report:** {SOURCE}")
+    
     payload = json.dumps({'content': content, 'allowed_mentions': {'parse': []}}).encode()
     req = Request(webhook, data=payload, headers={'Content-Type': 'application/json', 'User-Agent': 'BucksCountyPublicMonitor/1.0'}, method='POST')
     for attempt in range(3):
