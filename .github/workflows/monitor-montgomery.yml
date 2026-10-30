@@ -1,0 +1,41 @@
+name: Monitor Montgomery County 911
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '3-59/5 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: montgomery-county-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check Montgomery County RSS and notify Discord
+        env:
+          MONTGOMERY_DISCORD_WEBHOOK_URL: ${{ secrets.MONTGOMERY_DISCORD_WEBHOOK_URL }}
+        run: python monitor_montgomery.py
+      - name: Save Montgomery County incident history
+        run: |
+          if [ -f seen_montgomery_incidents.json ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add seen_montgomery_incidents.json
+            if ! git diff --cached --quiet; then
+              git commit -m "Update Montgomery County incident history"
+              git pull --rebase origin main
+              git push origin HEAD:main
+            fi
+          fi
